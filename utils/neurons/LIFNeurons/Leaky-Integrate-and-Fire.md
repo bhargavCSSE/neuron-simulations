@@ -29,16 +29,16 @@ This model approximates that behavior using the following simplified equation:
 
 ```mermaid
 flowchart TD
-    A[Start of Step] --> B[Receive Input Current I(t)]
-    B --> C[Update Membrane Potential v(t)]
+    A[Start of Step] --> B[Receive Input Current]
+    B --> C[Update Membrane Potential]
 
-    C --> D{v(t) ≥ Threshold?}
-    D -- Yes --> E[Emit Spike: spike = 1]
-    E --> F[Reset v(t) to v_reset]
+    C --> D{Membrane ≥ Threshold?}
+    D -- Yes --> E[Emit Spike -> 1]
+    E --> F[Reset Potential to v_reset]
     F --> G[Clear Input Current]
     G --> H[End of Step]
 
-    D -- No --> I[No Spike: spike = 0]
+    D -- No --> I[Emit Spike -> 0]
     I --> G
 ```
 
