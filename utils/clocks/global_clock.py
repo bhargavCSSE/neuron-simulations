@@ -7,6 +7,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 GLOBAL_TIME = torch.zeros(1, device=device)
 GLOBAL_WAVE = torch.zeros(1, device=device)
 GLOBAL_PULSE = torch.zeros(1, dtype=torch.uint8, device=device)
+GLOBAL_SPIKE = torch.zeros(1, dtype=torch.uint8, device=device)
 
 class clock:
     """
@@ -34,10 +35,12 @@ class clock:
     def run(self):
         self.start_time = time.perf_counter()
         next_time = self.start_time
+        prev_pulse_state = GLOBAL_PULSE.clone()
         dt = 1.0/self.sample_rate
 
         while self.running:
             now = time.perf_counter()
+            
             if now >= next_time:
                 t = now - self.start_time
                 
@@ -46,10 +49,14 @@ class clock:
                 # time = A*sin(2*pi*freq*time + displacement)
                 wave = self.amplitude*torch.sin(2*torch.pi*self.freq*t_tensor + 0.0)
                 pulse = (wave > 0).to(torch.uint8)
+                spike = (pulse ^ prev_pulse_state).to(torch.uint8)
+
+                prev_pulse_state.copy_(pulse)
 
                 GLOBAL_TIME.copy_(t_tensor)
                 GLOBAL_WAVE.copy_(wave)
                 GLOBAL_PULSE.copy_(pulse)
+                GLOBAL_SPIKE.copy_(spike)
                 
                 next_time += dt
             else:
