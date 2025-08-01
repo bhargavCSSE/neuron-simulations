@@ -52,14 +52,14 @@ $$
 
 Where:
 
-- \( v(t) \): Membrane potential at time step \( t \)
-- \( \tau \): Membrane time constant (leak rate)
-- \( v_{\text{rest}} \): Resting membrane potential
-- \( I(t) \): Input current at time step \( t \)
+- \( $v(t)$ \): Membrane potential at time step \( t \)
+- \( $\tau$ \): Membrane time constant (leak rate)
+- \( $v_{\text{rest}}$ \): Resting membrane potential
+- \( $I(t)$ \): Input current at time step \( t \)
 
 ### Spike Condition:
 
-If \( v(t + 1) \geq v_{\text{thresh}} \), the neuron emits a spike and resets:
+If \( $v(t + 1) \geq v_{\text{thresh}}$ \), the neuron emits a spike and resets:
 
 $$
 \text{if } v(t+1) \geq v_{\text{thresh}} \Rightarrow \text{spike} = 1, \quad v(t+1) = v_{\text{reset}}
