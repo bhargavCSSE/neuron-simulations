@@ -1,13 +1,15 @@
 import torch
 
 class LIFNeuron:
-    def __init__(self, v_rest=0.0, v_thresh=1.0, v_reset=0.0, tau=20.0, device=None):
+    def __init__(self, v_rest=0.0, v_thresh=1.0, v_reset=0.0, tau=20.0, r=1.0, device=None):
+        self.device = device
 
         # Neuron parameters
         self.v_rest = v_rest
         self.v_thresh = v_thresh
         self.v_reset = v_reset
         self.tau = tau
+        self.r = r
 
         # Internal state
         self.v = torch.tensor([v_rest], dtype=torch.float32, device=self.device)  # Membrane potential
@@ -20,8 +22,8 @@ class LIFNeuron:
 
     def update(self, global_time=None, global_wave=None, global_pulse=None):
         """Update neuron state based on LIF dynamics."""
-        # LIF equation: dv = (-(v - v_rest) + I) / tau
-        dv = (-(self.v - self.v_rest) + self.input_current) / self.tau
+        # LIF equation: dv = (-(v - v_rest) + I*R) / tau
+        dv = (-(self.v - self.v_rest) + self.r*self.input_current) / self.tau
         self.v += dv
 
         # Check if neuron spikes
