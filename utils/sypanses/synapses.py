@@ -1,6 +1,8 @@
 import torch
 
-
+"""
+Single synapse between LIF neurons
+"""
 class Synapse:
     def __init__(self, pre_neuron, post_neuron, weight=1.0):
         self.pre = pre_neuron
@@ -11,7 +13,10 @@ class Synapse:
         if self.pre.output.item() == 1:
             current = torch.tensor([self.weight], dtype=torch.float32, device=self.post.device)
             self.post.receive_input(current)
-            
+
+"""
+Feed forward Synpases Between LIF neuron groups (Vectorized for GPU acceleration)
+"""
 class FeedForwardSynapses:
     def __init__(self, pre, post, weight_scale=1.0):
         self.pre = pre
