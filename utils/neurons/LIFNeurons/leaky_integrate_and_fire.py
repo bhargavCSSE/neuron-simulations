@@ -49,33 +49,72 @@ class LIFNeuron:
 A Group of LIF Neurons Class (Vectorized for GPU acceleration)
 """
 class LIFNeuronGroup:
-    def __init__(self, size, v_rest=0.0, v_thresh=1.0, v_reset=0.0, tau=20.0, r=1.0, device=None):
+    def __init__(
+        self,
+        size,
+        v_rest=0.0,
+        v_thresh=1.0,
+        v_reset=0.0,
+        tau=20.0,
+        r=1.0,
+        refractory_period=5.0,
+        device=None,
+        log_traces=False
+    ):
         self.size = size
         self.device = device
         self.v_rest = v_rest
         self.v_thresh = v_thresh
-        self.v_reset = v_reset
+        self.v_reset_val = v_reset
         self.tau = tau
         self.r = r
+        self.refractory_period_val = refractory_period
+        self.log_traces = log_traces
 
-        self.v_trace = []
-        self.spike_trace = []
-
+        # State tensors
         self.v = torch.full((size,), v_rest, device=device)
         self.input_current = torch.zeros(size, device=device)
         self.spiked = torch.zeros(size, dtype=torch.uint8, device=device)
+        self.refractory_counter = torch.zeros(size, device=device)
 
-    def receive_input(self, current):
+        # Preallocated constants
+        self.v_reset = torch.full((size,), v_reset, device=device)
+        self.refractory_period = torch.full((size,), refractory_period, device=device)
+
+        # Traces
+        if log_traces:
+            self.spike_trace = []
+            self.full_v_trace = []
+            self.full_spike_trace = []
+
+    def reset_trace(self):
+        if self.log_traces:
+            self.spike_trace.clear()
+            self.full_v_trace.clear()
+            self.full_spike_trace.clear()
+
+    def receive_input(self, current: torch.Tensor):
         self.input_current += current
 
-    def update(self):
-        dv = (-(self.v - self.v_rest) + self.r*self.input_current) / self.tau
-        self.v += dv
+    def update(self, dt=1.0):
+        # Decay refractory counters
+        self.refractory_counter -= 1
+        self.refractory_counter.clamp_min_(0)
 
-        self.spiked = (self.v >= self.v_thresh).to(torch.uint8)
-        self.v = torch.where(self.spiked.bool(), torch.tensor(self.v_reset, device=self.device), self.v)
+        not_refractory = self.refractory_counter == 0
 
-        self.v_trace.append(self.v)
-        self.spike_trace.append(self.spiked)
+        dv = (-(self.v - self.v_rest) + self.r * self.input_current) / self.tau
+        self.v = torch.where(not_refractory, self.v + dv * dt, self.v)
+
+        spiked_now = (self.v >= self.v_thresh) & not_refractory
+        self.spiked = spiked_now.to(torch.uint8)
+
+        self.v = torch.where(spiked_now, self.v_reset, self.v)
+        self.refractory_counter = torch.where(spiked_now, self.refractory_period, self.refractory_counter)
+
+        if self.log_traces:
+            self.spike_trace.append(self.spiked.clone())
+            self.full_v_trace.append(self.v.clone())
+            self.full_spike_trace.append(self.spiked.clone())
 
         self.input_current.zero_()
